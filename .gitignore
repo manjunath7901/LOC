@@ -1,0 +1,125 @@
+# Python virtual environment
+venv/
+env/
+ENV/
+.venv/
+.env/
+.python-version
+.env
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*/__pycache__/*
+*.so
+.Python
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Development tools
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project-specific files
+# Temporarily generated data files
+static/data/*
+static/images/*
+# But keep these directories
+!static/data/.gitkeep
+!static/images/.gitkeep
+
+# Generated CSV and image files from analysis
+*_loc_changes.png
+*_loc.csv
+*_stats.csv
+*_stats.png
+*_user_stats.csv
+*_user_stats.png
+cx_switch_health_loc.csv
+cx_switch_health_loc.png
+GVT_*_loc_changes.png
+GVT_*_quick_user_stats.csv
+GVT_*_user_stats.csv
+GVT_*_user_stats.png
+last_30_days_stats.csv
+user_loc_stats.csv
+user_loc_trends.png
+user_summary_*_stats.csv
+TEST_repository_user_stats.*
+
+# Credentials and tokens
+*.token
+*.key
+credentials.json
+token.txt
+*auth*.sh
+*token*.sh
+activate_env.sh
+
+# Shell scripts with environment-specific configurations
+test_*.sh
+analyze_*_token.sh
+analyze_cx_*.sh
+cx_analyze.sh
+fetch_cx_*.sh
+test_bearer_token_*.sh
+test_connection.sh
+find_member_prs_last_week.sh
+list_all_commits_last_week.sh
+analyze_authors_last_week.sh
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Output of analysis
+*.json
+cx_commits.json
+# But keep any sample data files
+!sample_data.json
+
+# Generated analysis files and reports
+*_contribution_summary.png
+*_loc_data.csv
+*_member_contributions.csv
+all_prs_*.csv
+author_contributions_*.csv
+authors_last_*.csv
+detailed_commits.csv
+direct_commits_*.csv
+fixed_daily_changes.png
+last_*days_member_contributions.csv
+last_week_member_contributions.csv
+prs_last_*.csv
+standard_loc_last_*.csv
+contribution_summary_report.md
+last_*days_analysis_summary.md
+
+# Environment and local configuration
+.token_env
+
+# Mac specific files
+.DS_Store
+.AppleDouble
+.LSOverride
