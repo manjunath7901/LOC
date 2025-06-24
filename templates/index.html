@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitbucket LOC Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            background-color: #f8f9fa;
+        }
+        .form-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .info-text {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Bitbucket LOC Analyzer</h1>
+            <p class="lead">Track lines of code added and deleted over time in your Bitbucket repositories</p>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="form-container">
+                    <form action="/analyze" method="post">
+                        <div class="mb-3">
+                            <label for="token" class="form-label">Bitbucket Access Token <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="token" name="token" required>
+                            <div class="info-text">
+                                Your token is used for API authentication and never stored on the server.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="base_url" class="form-label">Bitbucket Base URL</label>
+                            <input type="text" class="form-control" id="base_url" name="base_url" value="https://stash.arubanetworks.com" required>
+                            <div class="info-text">
+                                For self-hosted Bitbucket/Stash instances (e.g., https://stash.arubanetworks.com)
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="workspace" class="form-label">Workspace/Project Key <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="workspace" name="workspace" required>
+                                    <div class="info-text">
+                                        The project or workspace containing the repository (e.g., GVT)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="repo_slug" class="form-label">Repository Slug <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="repo_slug" name="repo_slug" required>
+                                    <div class="info-text">
+                                        The repository name/slug (e.g., cx-switch-health-read-assist)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="start_date" class="form-label">Start Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ two_weeks_ago }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="end_date" class="form-label">End Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ today }}" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="group_by" class="form-label">Group By</label>
+                            <select class="form-select" id="group_by" name="group_by">
+                                <option value="day">Day</option>
+                                <option value="week">Week</option>
+                                <option value="month">Month</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="include_prs" name="include_prs" checked>
+                                <label class="form-check-label" for="include_prs">
+                                    Include PR Analysis
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="include_direct" name="include_direct" checked>
+                                <label class="form-check-label" for="include_direct">
+                                    Include Direct Commits Analysis
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Analyze Repository</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
