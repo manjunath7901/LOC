@@ -7,6 +7,9 @@ ENV/
 .python-version
 .env
 
+# API Cache
+.api_cache/
+
 # Python bytecode
 __pycache__/
 *.py[cod]
