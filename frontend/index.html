@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Repository Bitbucket LOC Analyzer</title>
+    <link rel="stylesheet" href="static/css/styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>📊 Multi-Repository Bitbucket LOC Analyzer</h1>
+                <p>Advanced code analysis with enhanced multi-repository support and separate visualizations</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Analysis Form -->
+            <section id="analysis-form-section" class="section">
+                <div class="section-header">
+                    <h2>🚀 New Analysis</h2>
+                    <p>Configure your multi-repository analysis</p>
+                </div>
+                
+                <div class="form-container">
+                    <form id="analysis-form">
+                        <!-- Connection Settings -->
+                        <div class="form-group-section">
+                            <h3>🔗 Connection Settings</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="token">Bitbucket Token <span class="required">*</span></label>
+                                    <input type="password" id="token" name="token" required 
+                                           placeholder="Your Bitbucket access token">
+                                    <div class="help-text">Personal access token or app password for authentication</div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="base_url">Base URL <span class="required">*</span></label>
+                                    <input type="url" id="base_url" name="base_url" 
+                                           value="https://stash.arubanetworks.com" required>
+                                    <div class="help-text">Your Bitbucket server URL</div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="workspace">Workspace/Project <span class="required">*</span></label>
+                                    <input type="text" id="workspace" name="workspace" required 
+                                           placeholder="e.g., GVT">
+                                    <div class="help-text">Bitbucket workspace or project key</div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <button type="button" id="test-connection" class="btn btn-secondary">
+                                        🔍 Test Connection
+                                    </button>
+                                    <div id="connection-status" class="connection-status"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Repository Configuration -->
+                        <div class="form-group-section">
+                            <h3>📁 Repository Configuration</h3>
+                            
+                            <div class="form-group">
+                                <label for="repo_slugs">Repository Slugs <span class="required">*</span></label>
+                                <textarea id="repo_slugs" name="repo_slugs" rows="4" required
+                                          placeholder="cx-switch-health-read-assist&#10;cx-switch-device-health&#10;another-repo"></textarea>
+                                <div class="multi-repo-help">
+                                    <strong>💡 Enhanced Multi-Repository Support:</strong><br>
+                                    • Enter one repository per line or separate with commas<br>
+                                    • Each repository gets its own dedicated charts with clear naming<br>
+                                    • Combined cross-repository analysis will be generated<br>
+                                    • Repository names are automatically formatted for display<br>
+                                    • Example: <code>repo-one, repo-two</code> or line-separated
+                                </div>
+                            </div>
+                            
+                            <div id="repo-preview" class="repo-preview hidden">
+                                <h4>📋 Repository Preview</h4>
+                                <div id="repo-list"></div>
+                            </div>
+                        </div>
+
+                        <!-- Analysis Settings -->
+                        <div class="form-group-section">
+                            <h3>⚙️ Analysis Settings</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="start_date">Start Date <span class="required">*</span></label>
+                                    <input type="date" id="start_date" name="start_date" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="end_date">End Date <span class="required">*</span></label>
+                                    <input type="date" id="end_date" name="end_date" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="group_by">Group By</label>
+                                    <select id="group_by" name="group_by">
+                                        <option value="day">Day</option>
+                                        <option value="week">Week</option>
+                                        <option value="month">Month</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="focus_user">Focus User (Optional)</label>
+                                <input type="text" id="focus_user" name="focus_user" 
+                                       placeholder="e.g., manjunath.kallatti@hpe.com">
+                                <div class="help-text">Filter analysis to focus on a specific user's contributions</div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions">
+                            <button type="submit" id="start-analysis" class="btn btn-primary">
+                                🚀 Start Enhanced Analysis
+                            </button>
+                            <button type="reset" class="btn btn-secondary">
+                                🔄 Reset Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Analysis Progress -->
+            <section id="progress-section" class="section hidden">
+                <div class="section-header">
+                    <h2>⏳ Analysis Progress</h2>
+                    <p id="progress-description">Your analysis is being processed...</p>
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-header">
+                        <span id="progress-text">Initializing...</span>
+                        <span id="progress-percentage">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <div id="progress-message" class="progress-message">Starting analysis...</div>
+                </div>
+                
+                <div class="progress-actions">
+                    <button id="cancel-analysis" class="btn btn-secondary">❌ Cancel</button>
+                    <button id="new-analysis" class="btn btn-primary hidden">🆕 New Analysis</button>
+                </div>
+            </section>
+
+            <!-- Results Display -->
+            <section id="results-section" class="section hidden">
+                <div class="section-header">
+                    <h2>📊 Analysis Results</h2>
+                    <p id="results-description">Your multi-repository analysis is complete!</p>
+                </div>
+                
+                <!-- Results Summary -->
+                <div id="results-summary" class="results-summary">
+                    <!-- Populated by JavaScript -->
+                </div>
+                
+                <!-- Repository Results -->
+                <div id="repository-results" class="repository-results">
+                    <!-- Populated by JavaScript -->
+                </div>
+                
+                <!-- Combined Analysis -->
+                <div id="combined-results" class="combined-results">
+                    <!-- Populated by JavaScript -->
+                </div>
+                
+                <!-- Generated Files -->
+                <div id="files-section" class="files-section">
+                    <h3>📄 Generated Files</h3>
+                    <div id="files-list" class="files-list">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="results-actions">
+                    <button id="download-all" class="btn btn-success">📦 Download All Files</button>
+                    <button id="start-new-analysis" class="btn btn-primary">🚀 New Analysis</button>
+                    <button id="view-report" class="btn btn-secondary">📋 View Report</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2025 Multi-Repository Bitbucket LOC Analyzer - Enhanced with separate repository visualization</p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p id="loading-message">Processing...</p>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>❌ Error</h3>
+                <button id="close-error-modal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="error-message"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="error-ok" class="btn btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/js/app.js"></script>
+</body>
+</html>

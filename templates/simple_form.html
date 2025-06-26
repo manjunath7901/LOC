@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitbucket LOC Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .form-container {
+            padding: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .analysis-type-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .analysis-type-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .analysis-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .analysis-option {
+            background: white;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .analysis-option:hover {
+            border-color: #3498db;
+            transform: translateY(-2px);
+        }
+        
+        .analysis-option.selected {
+            border-color: #3498db;
+            background: #e8f4fd;
+        }
+        
+        .analysis-option input[type="radio"] {
+            width: auto;
+            margin-right: 10px;
+        }
+        
+        .analysis-option h4 {
+            margin: 5px 0;
+            color: #2c3e50;
+        }
+        
+        .analysis-option p {
+            font-size: 0.9em;
+            color: #666;
+            margin: 0;
+        }
+        
+        .user-fields {
+            display: none;
+            background: #fff3cd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .user-fields.show {
+            display: block;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+        }
+        
+        .error {
+            background-color: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+        }
+        
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .required {
+            color: #e74c3c;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .analysis-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Bitbucket LOC Analyzer</h1>
+            <p>Choose between user-focused analysis or overall repository statistics</p>
+        </div>
+        
+        <div class="form-container">
+            {% if error %}
+                <div class="error">{{ error }}</div>
+            {% endif %}
+            
+            <form method="post" action="/analyze" id="analysisForm">
+                <div class="form-group">
+                    <label for="token">Access Token <span class="required">*</span></label>
+                    <input type="password" id="token" name="token" required>
+                    <div class="help-text">Your Bitbucket access token</div>
+                </div>
+                
+                <div class="analysis-type-section">
+                    <h3>Analysis Type</h3>
+                    <div class="analysis-options">
+                        <div class="analysis-option" data-type="user_focus">
+                            <label>
+                                <input type="radio" name="analysis_type" value="user_focus">
+                                <h4>👤 User-Focused Analysis</h4>
+                                <p>Analyze contributions for a specific user. Fast and focused.</p>
+                            </label>
+                        </div>
+                        <div class="analysis-option selected" data-type="overall">
+                            <label>
+                                <input type="radio" name="analysis_type" value="overall" checked>
+                                <h4>📊 Overall Repository Stats</h4>
+                                <p>Complete statistics for ALL contributors. Takes longer but comprehensive.</p>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="user-fields" id="userFields">
+                        <div class="form-group">
+                            <label for="focus_user">User Email <span class="required">*</span></label>
+                            <input type="email" id="focus_user" name="focus_user" placeholder="e.g., manjunath.kallatti@hpe.com">
+                            <div class="help-text">Enter the email address of the user to analyze</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="base_url">Base URL <span class="required">*</span></label>
+                    <input type="url" id="base_url" name="base_url" value="https://stash.arubanetworks.com" required>
+                    <div class="help-text">Your Bitbucket server URL</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="workspace">Workspace/Project <span class="required">*</span></label>
+                    <input type="text" id="workspace" name="workspace" placeholder="e.g., GVT" required>
+                    <div class="help-text">The workspace or project key</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="repositories">Repositories <span class="required">*</span></label>
+                    <textarea id="repositories" name="repositories" placeholder="Enter repository names, one per line or comma-separated:&#10;cx-switch-health-read-assist&#10;another-repo-name" required></textarea>
+                    <div class="help-text">Enter one or more repository names (one per line or comma-separated)</div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start_date">Start Date <span class="required">*</span></label>
+                        <input type="date" id="start_date" name="start_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end_date">End Date <span class="required">*</span></label>
+                        <input type="date" id="end_date" name="end_date" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="group_by">Group By</label>
+                    <select id="group_by" name="group_by">
+                        <option value="day">Day</option>
+                        <option value="week">Week</option>
+                        <option value="month">Month</option>
+                    </select>
+                    <div class="help-text">How to group the data for visualization</div>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">Analyze Overall Repository Stats</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Set default dates (last 30 days)
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+        
+        document.getElementById('end_date').value = today.toISOString().split('T')[0];
+        document.getElementById('start_date').value = thirtyDaysAgo.toISOString().split('T')[0];
+        
+        // Handle analysis type selection
+        const analysisOptions = document.querySelectorAll('.analysis-option');
+        const userFields = document.getElementById('userFields');
+        const focusUserInput = document.getElementById('focus_user');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        analysisOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove selected class from all options
+                analysisOptions.forEach(opt => opt.classList.remove('selected'));
+                
+                // Add selected class to clicked option
+                this.classList.add('selected');
+                
+                // Check the radio button
+                const radio = this.querySelector('input[type="radio"]');
+                radio.checked = true;
+                
+                // Show/hide user fields based on selection
+                const analysisType = this.dataset.type;
+                if (analysisType === 'user_focus') {
+                    userFields.classList.add('show');
+                    focusUserInput.required = true;
+                    submitBtn.textContent = 'Analyze User Contributions';
+                } else {
+                    userFields.classList.remove('show');
+                    focusUserInput.required = false;
+                    focusUserInput.value = ''; // Clear the field when hiding
+                    submitBtn.textContent = 'Analyze Overall Repository Stats';
+                }
+            });
+        });
+        
+        // Also handle radio button changes directly
+        document.querySelectorAll('input[name="analysis_type"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const analysisType = this.value;
+                const parentOption = this.closest('.analysis-option');
+                
+                // Update visual selection
+                analysisOptions.forEach(opt => opt.classList.remove('selected'));
+                parentOption.classList.add('selected');
+                
+                // Show/hide user fields
+                if (analysisType === 'user_focus') {
+                    userFields.classList.add('show');
+                    focusUserInput.required = true;
+                    submitBtn.textContent = 'Analyze User Contributions';
+                } else {
+                    userFields.classList.remove('show');
+                    focusUserInput.required = false;
+                    focusUserInput.value = ''; // Clear the field when hiding
+                    submitBtn.textContent = 'Analyze Overall Repository Stats';
+                }
+            });
+        });
+        
+        // Form validation and submission blocking
+        let isSubmitting = false;
+        document.getElementById('analysisForm').addEventListener('submit', function(e) {
+            const analysisType = document.querySelector('input[name="analysis_type"]:checked').value;
+            const focusUser = document.getElementById('focus_user').value.trim();
+            
+            if (analysisType === 'user_focus' && !focusUser) {
+                e.preventDefault();
+                alert('User-focused analysis requires a user email to be specified.');
+                return false;
+            }
+            
+            // Prevent multiple submissions
+            if (isSubmitting) {
+                e.preventDefault();
+                return false;
+            }
+            
+            isSubmitting = true;
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.textContent;
+            
+            // Update button to show submitting state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Starting Analysis...';
+            submitBtn.style.cursor = 'not-allowed';
+            submitBtn.style.opacity = '0.7';
+            
+            // Add loading spinner
+            submitBtn.innerHTML = '<span style="margin-right: 8px;">⏳</span>' + submitBtn.textContent;
+        });
+    </script>
+</body>
+</html>

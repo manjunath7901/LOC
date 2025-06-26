@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Results - Bitbucket LOC Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+        
+        .header .summary {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .new-analysis-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+        
+        .new-analysis-btn:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: white;
+        }
+        
+        .analysis-badge {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        
+        .analysis-badge.user-focus {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 2px solid #4caf50;
+        }
+        
+        .analysis-badge.overall {
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 2px solid #2196f3;
+        }
+        
+        .results-grid {
+            display: grid;
+            gap: 30px;
+        }
+        
+        .repo-result {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .repo-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .repo-header h2 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+        
+        .repo-content {
+            padding: 30px;
+        }
+        
+        .chart-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-number.positive {
+            color: #27ae60;
+        }
+        
+        .stat-number.negative {
+            color: #e74c3c;
+        }
+        
+        .stat-number.neutral {
+            color: #3498db;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px;
+        }
+        
+        .overall-stats {
+            background: linear-gradient(135deg, #27ae60 0%, #2e8b57 100%);
+            color: white;
+        }
+        
+        .overall-stats .repo-header {
+            background: rgba(0,0,0,0.2);
+        }
+        
+        .overall-stats .stat-card {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .overall-stats .stat-number {
+            color: white;
+        }
+        
+        .user-stats-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .user-stats-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        
+        .user-stats-table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .user-stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 0.9em;
+            min-width: 600px; /* Ensure minimum width for readability */
+        }
+        
+        .user-stats-table th {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        
+        .user-stats-table th:first-child {
+            text-align: left;
+            width: 35%;
+            min-width: 180px;
+        }
+        
+        .user-stats-table th:not(:first-child) {
+            width: 16.25%;
+            min-width: 80px;
+        }
+        
+        .user-stats-table td {
+            padding: 8px;
+            border-bottom: 1px solid #e1e8ed;
+            font-size: 0.85em;
+        }
+        
+        .user-stats-table td:first-child {
+            padding: 10px 12px;
+        }
+        
+        .user-stats-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .user-stats-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            max-width: 200px;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 2px;
+            font-size: 0.9em;
+            line-height: 1.2;
+        }
+        
+        .user-email {
+            font-size: 0.75em;
+            color: #666;
+            font-style: italic;
+            line-height: 1.1;
+            word-break: break-all;
+        }
+        
+        .stat-cell {
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .stat-cell.positive {
+            color: #27ae60;
+        }
+        
+        .stat-cell.negative {
+            color: #e74c3c;
+        }
+        
+        .stat-cell.total {
+            color: #3498db;
+            font-weight: bold;
+        }
+        
+        /* Navigation tabs for multiple repositories */
+        .repo-nav-tabs {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .nav-tab button {
+            width: 100%;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-tab button:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .nav-tab button.active {
+            background: white;
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+        }
+        
+        .nav-tab button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #3498db;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .user-stats-table {
+                font-size: 0.8em;
+                min-width: 500px;
+            }
+            
+            .user-stats-table th,
+            .user-stats-table td {
+                padding: 6px 4px;
+            }
+            
+            .user-stats-table th:first-child,
+            .user-stats-table td:first-child {
+                padding: 8px 6px;
+            }
+            
+            .user-name {
+                font-size: 0.8em;
+            }
+            
+            .user-email {
+                font-size: 0.7em;
+            }
+            
+            .user-info {
+                max-width: 140px;
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+            }
+            
+            .nav-tab button {
+                text-align: left;
+                padding: 12px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Analysis Results</h1>
+            <div class="summary">
+                <strong>{{ workspace }}</strong> repositories from <strong>{{ start_date }}</strong> to <strong>{{ end_date }}</strong>
+                <br>
+                {% if analysis_type == 'user_focus' %}
+                    <span class="analysis-badge user-focus">👤 User-Focused Analysis: {{ focus_user }}</span>
+                {% else %}
+                    <span class="analysis-badge overall">📊 Overall Repository Statistics</span>
+                {% endif %}
+                <br>
+                Analyzed {{ repositories|length }} repository{% if repositories|length != 1 %}ies{% endif %}
+            </div>
+            <a href="/" class="new-analysis-btn">New Analysis</a>
+        </div>
+        
+        <!-- Navigation Tabs for Multiple Repositories -->
+        {% if repo_results|length > 1 %}
+        <div class="repo-nav-tabs">
+            <ul class="nav-tabs">
+                {% if overall_stats %}
+                <li class="nav-tab">
+                    <button class="tab-btn active" data-tab="overall">
+                        📊 Overall Statistics
+                    </button>
+                </li>
+                {% endif %}
+                {% for repo in repo_results %}
+                <li class="nav-tab">
+                    <button class="tab-btn {% if not overall_stats and loop.index == 1 %}active{% endif %}" data-tab="repo-{{ loop.index }}">
+                        {{ repo.repo_slug }}
+                        {% if repo.success %}✅{% else %}❌{% endif %}
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <div class="results-grid">
+            <!-- Overall Stats Tab Content -->
+            {% if overall_stats %}
+            <div id="overall" class="tab-content {% if repo_results|length <= 1 or not overall_stats %}{% else %}active{% endif %}">
+                <div class="repo-result overall-stats">
+                    <div class="repo-header">
+                        <h2>📊 Overall Statistics</h2>
+                        {% if overall_stats.analysis_type == 'user_focus' %}
+                            <p>Combined results for {{ focus_user }} across {{ overall_stats.num_repos }} repositories</p>
+                        {% else %}
+                            <p>Combined results across {{ overall_stats.num_repos }} repositories (all contributors)</p>
+                        {% endif %}
+                    </div>
+                    <div class="repo-content">
+                        {% if overall_chart %}
+                        <div class="chart-container">
+                            <img src="/chart/{{ overall_chart }}" alt="Overall Activity Chart">
+                        </div>
+                        {% endif %}
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number positive">+{{ "{:,}".format(overall_stats.total_additions) }}</div>
+                                <div class="stat-label">Total Additions</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number negative">-{{ "{:,}".format(overall_stats.total_deletions) }}</div>
+                                <div class="stat-label">Total Deletions</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number {% if overall_stats.net_change >= 0 %}positive{% else %}negative{% endif %}">
+                                    {{ "{:+,}".format(overall_stats.net_change) }}
+                                </div>
+                                <div class="stat-label">Net Change</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number neutral">{{ "{:,}".format(overall_stats.total_commits) }}</div>
+                                <div class="stat-label">Total Data Points</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Individual Repository Tab Contents -->
+            {% for repo in repo_results %}
+            <div id="repo-{{ loop.index }}" class="tab-content {% if repo_results|length <= 1 or (not overall_stats and loop.index == 1) %}active{% endif %}">
+                <div class="repo-result">
+                    <div class="repo-header">
+                        <h2>{{ repo.repo_slug }}</h2>
+                        {% if repo.success %}
+                            <p>✅ Analysis completed successfully</p>
+                        {% else %}
+                            <p>❌ Analysis failed</p>
+                        {% endif %}
+                    </div>
+                    <div class="repo-content">
+                        {% if repo.success %}
+                            <div class="chart-container">
+                                <img src="/chart/{{ repo.chart_file }}" alt="{{ repo.repo_slug }} Activity Chart">
+                            </div>
+                            
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-number positive">+{{ "{:,}".format(repo.total_additions) }}</div>
+                                    <div class="stat-label">Additions</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number negative">-{{ "{:,}".format(repo.total_deletions) }}</div>
+                                    <div class="stat-label">Deletions</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number {% if repo.net_change >= 0 %}positive{% else %}negative{% endif %}">
+                                        {{ "{:+,}".format(repo.net_change) }}
+                                    </div>
+                                    <div class="stat-label">Net Change</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number neutral">{{ "{:,}".format(repo.total_commits) }}</div>
+                                    <div class="stat-label">Data Points</div>
+                                </div>
+                            </div>
+                            
+                            <!-- User Stats Section (for overall analysis) -->
+                            {% if analysis_type == 'overall' and repo.user_data %}
+                            <div class="user-stats-section">
+                                <h3>👥 Top Contributors</h3>
+                                <div class="user-stats-table-container">
+                                    <table class="user-stats-table">
+                                        <thead>
+                                            <tr>
+                                                <th>User</th>
+                                                <th>Commits</th>
+                                                <th>Additions</th>
+                                                <th>Deletions</th>
+                                                <th>Total Changes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for user in repo.user_data %}
+                                            <tr>
+                                                <td>
+                                                    <div class="user-info">
+                                                        <div class="user-name">{{ user.name }}</div>
+                                                        {% if user.email and user.email != 'example@example.com' %}
+                                                        <div class="user-email">{{ user.email }}</div>
+                                                        {% endif %}
+                                                    </div>
+                                                </td>
+                                                <td class="stat-cell">{{ "{:,}".format(user.commits) }}</td>
+                                                <td class="stat-cell positive">+{{ "{:,}".format(user.additions) }}</td>
+                                                <td class="stat-cell negative">-{{ "{:,}".format(user.deletions) }}</td>
+                                                <td class="stat-cell total">{{ "{:,}".format(user.total_changes) }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="error-message">
+                                <strong>Error:</strong> {{ repo.error }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- JavaScript for Tab Navigation -->
+        {% if repo_results|length > 1 %}
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const tabButtons = document.querySelectorAll('.tab-btn');
+                const tabContents = document.querySelectorAll('.tab-content');
+                
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const targetTab = this.getAttribute('data-tab');
+                        
+                        // Remove active class from all buttons and contents
+                        tabButtons.forEach(btn => btn.classList.remove('active'));
+                        tabContents.forEach(content => content.classList.remove('active'));
+                        
+                        // Add active class to clicked button and corresponding content
+                        this.classList.add('active');
+                        document.getElementById(targetTab).classList.add('active');
+                    });
+                });
+            });
+        </script>
+        {% endif %}
+    </div>
+</body>
+</html>

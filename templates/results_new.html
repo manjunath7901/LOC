@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitbucket LOC Analysis Results</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            background-color: #f8f9fa;
+        }
+        .result-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .chart-container {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .chart-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .user-table {
+            font-size: 0.9rem;
+        }
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+        }
+        .tab-content {
+            padding: 2rem 0;
+        }
+        .stats-badge {
+            font-size: 0.85rem;
+        }
+        .loading-spinner {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Bitbucket LOC Analysis Results</h1>
+            <p class="lead">
+                Analysis of <strong>{{ workspace }}/{{ repo_slug }}</strong> 
+                {% if start_date != 'N/A' and end_date != 'N/A' %}
+                from <strong>{{ start_date }}</strong> to <strong>{{ end_date }}</strong>
+                {% endif %}
+                {% if analysis_type == 'user_focus' and focus_user %}
+                for user <strong>{{ focus_user }}</strong>
+                {% elif analysis_type == 'overall' %}
+                (Complete Repository Analysis)
+                {% elif analysis_type == 'legacy' %}
+                (Analysis Results)
+                {% endif %}
+            </p>
+            <a href="/" class="btn btn-outline-primary btn-sm">New Analysis</a>
+        </div>
+
+        <div class="result-container">
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-tabs" id="analysisTabs" role="tablist">
+                {% if analysis_type == 'overall' %}
+                <!-- Overall Repository Stats Analysis -->
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="overall-tab" data-bs-toggle="tab" data-bs-target="#overall-content" type="button" role="tab">
+                        📊 Overall Repository Stats
+                        <span class="badge bg-success stats-badge ms-1">{{ user_data|length }} contributors</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-content" type="button" role="tab">
+                        📈 Timeline
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="downloads-tab" data-bs-toggle="tab" data-bs-target="#downloads-content" type="button" role="tab">
+                        💾 Downloads
+                    </button>
+                </li>
+                {% else %}
+                <!-- User-Focused Analysis or Legacy Analysis -->
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="user-tab" data-bs-toggle="tab" data-bs-target="#user-content" type="button" role="tab">
+                        {% if analysis_type == 'user_focus' %}👤 User Analysis{% else %}📊 Analysis Results{% endif %}
+                        <span class="badge bg-secondary stats-badge ms-1">{{ user_data|length }} users</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-content" type="button" role="tab">
+                        📈 Timeline
+                    </button>
+                </li>
+                {% if analysis_id and analysis_type == 'user_focus' and focus_user %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="overall-tab" data-bs-toggle="tab" data-bs-target="#overall-content" type="button" role="tab" onclick="loadOverallStats()">
+                        📊 Overall Repository Stats
+                        <span class="badge bg-warning stats-badge ms-1" id="overall-badge">Click to load</span>
+                    </button>
+                </li>
+                {% endif %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="downloads-tab" data-bs-toggle="tab" data-bs-target="#downloads-content" type="button" role="tab">
+                        💾 Downloads
+                    </button>
+                </li>
+                {% endif %}
+            </ul>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="analysisTabContent">
+                {% if analysis_type == 'overall' %}
+                <!-- Overall Repository Stats Tab (Active for overall analysis) -->
+                <div class="tab-pane fade show active" id="overall-content" role="tabpanel">
+                    <h4>📊 Overall Repository Statistics</h4>
+                    <p class="text-info">
+                        <i class="fas fa-info-circle"></i>
+                        Complete statistics for <strong>all {{ user_data|length }} contributors</strong> in {{ workspace }}/{{ repo_slug }}.
+                    </p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>All Contributors Chart</h5>
+                            <div class="chart-container">
+                                <img src="/static/images/{{ user_chart_file }}" alt="All Contributors Chart" class="chart-image">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Complete Timeline</h5>
+                            <div class="chart-container">
+                                <img src="/static/images/{{ chart_file }}" alt="Complete Timeline Chart" class="chart-image">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>All Contributors Statistics</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover user-table">
+                                <thead>
+                                    <tr>
+                                        <th>Contributor</th>
+                                        <th>Commits</th>
+                                        <th>Additions</th>
+                                        <th>Deletions</th>
+                                        <th>Total Changes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in user_data %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ user.name }}</strong>
+                                            {% if user.email %}
+                                            <br><small class="text-muted">{{ user.email }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ user.commits }}</td>
+                                        <td class="text-success">+{{ user.additions }}</td>
+                                        <td class="text-danger">-{{ user.deletions }}</td>
+                                        <td><strong>{{ user.total_changes }}</strong></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- User Analysis Tab (Active for user-focused analysis) -->
+                <div class="tab-pane fade show active" id="user-content" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>User Contributions Chart</h4>
+                            <div class="chart-container">
+                                <img src="/static/images/{{ user_chart_file }}" alt="User Contributions Chart" class="chart-image">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>Detailed Statistics</h4>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover user-table">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Commits</th>
+                                            <th>Additions</th>
+                                            <th>Deletions</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for user in user_data %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ user.name }}</strong>
+                                                {% if user.email %}
+                                                <br><small class="text-muted">{{ user.email }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ user.commits }}</td>
+                                            <td class="text-success">+{{ user.additions }}</td>
+                                            <td class="text-danger">-{{ user.deletions }}</td>
+                                            <td><strong>{{ user.total_changes }}</strong></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Timeline Tab -->
+                <div class="tab-pane fade" id="timeline-content" role="tabpanel">
+                    <h4>Changes Over Time</h4>
+                    <div class="chart-container">
+                        <img src="/static/images/{{ chart_file }}" alt="Timeline Chart" class="chart-image">
+                    </div>
+                    <p class="text-muted">
+                        This chart shows the daily/weekly/monthly changes in lines of code 
+                        {% if focus_user %}for {{ focus_user }}{% else %}across all contributors{% endif %}.
+                        Green bars represent code additions, red bars represent deletions.
+                    </p>
+                </div>
+
+                {% if analysis_type != 'overall' %}
+                <!-- Overall Stats Tab (loaded dynamically for user-focused analysis) -->
+                <div class="tab-pane fade" id="overall-content" role="tabpanel">
+                    <div id="overall-loading" class="text-center">
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle"></i> Overall Repository Statistics</h5>
+                            <p>This section will load comprehensive statistics for <strong>all contributors</strong> in the repository.</p>
+                            <p class="mb-0">Click this tab to start loading the data.</p>
+                        </div>
+                    </div>
+                    
+                    <div id="overall-content-loaded" style="display: none;">
+                        <h4>Overall Repository Statistics</h4>
+                        <p class="text-info">
+                            <i class="fas fa-info-circle"></i>
+                            This section shows statistics for all contributors across the entire repository.
+                        </p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>All Contributors Chart</h5>
+                                <div class="chart-container">
+                                    <img id="overall-user-chart" src="" alt="All Contributors Chart" class="chart-image" style="display: none;">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Complete Timeline</h5>
+                                <div class="chart-container">
+                                    <img id="overall-timeline-chart" src="" alt="Complete Timeline Chart" class="chart-image" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h5>All Contributors Table</h5>
+                            <div id="overall-table-container">
+                                <!-- Table will be loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Downloads Tab -->
+                <div class="tab-pane fade" id="downloads-content" role="tabpanel">
+                    <h4>Download Data Files</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">📊 User Statistics</h5>
+                                    <p class="card-text">Download detailed user contribution statistics in CSV format.</p>
+                                    <a href="/download/{{ user_stats_file }}" class="btn btn-primary">
+                                        Download User Stats CSV
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">📈 Daily Statistics</h5>
+                                    <p class="card-text">Download daily breakdown of code changes in CSV format.</p>
+                                    <a href="/download/{{ daily_stats_file }}" class="btn btn-primary">
+                                        Download Daily Stats CSV
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer mt-5 text-center">
+            <a href="/" class="btn btn-outline-primary">Start New Analysis</a>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let overallStatsLoaded = false;
+        
+        function loadOverallStats() {
+            if (overallStatsLoaded) {
+                return; // Already loaded
+            }
+            
+            const analysisId = '{{ analysis_id }}';
+            if (!analysisId || analysisId === 'None') {
+                document.getElementById('overall-loading').innerHTML = 
+                    '<div class="alert alert-warning">Overall stats not available for this analysis. Please start a new analysis to use this feature.</div>';
+                return;
+            }
+            
+            // Show loading spinner
+            document.getElementById('overall-loading').style.display = 'block';
+            document.getElementById('overall-badge').textContent = 'Loading...';
+            document.getElementById('overall-badge').className = 'badge bg-warning stats-badge ms-1';
+            
+            // Trigger overall analysis
+            fetch(`/analyze_overall/${analysisId}`)
+                .then(response => {
+                    console.log('Overall analysis response:', response);
+                    if (response.redirected) {
+                        // Extract analysis ID from redirect URL
+                        const redirectUrl = response.url;
+                        const urlParts = redirectUrl.split('/');
+                        const newAnalysisId = urlParts[urlParts.length - 1];
+                        console.log('Redirected to progress for analysis:', newAnalysisId);
+                        return pollOverallProgress(newAnalysisId);
+                    } else if (response.ok) {
+                        // If response is OK but not redirected, might be error page
+                        return response.text().then(html => {
+                            // Check if it's an error page
+                            if (html.includes('Oops! An Error Occurred') || html.includes('Overall Repository Stats Not Available')) {
+                                // Parse error message from HTML
+                                const parser = new DOMParser();
+                                const doc = parser.parseFromString(html, 'text/html');
+                                const alertDiv = doc.querySelector('.alert');
+                                const errorMessage = alertDiv ? alertDiv.innerHTML : 'Error loading overall statistics. Please start a new analysis.';
+                                
+                                document.getElementById('overall-loading').innerHTML = 
+                                    `<div class="alert alert-warning">${errorMessage}</div>`;
+                                document.getElementById('overall-badge').textContent = 'Not Available';
+                                document.getElementById('overall-badge').className = 'badge bg-secondary stats-badge ms-1';
+                            } else {
+                                throw new Error('Unexpected response from server');
+                            }
+                        });
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading overall stats:', error);
+                    document.getElementById('overall-loading').innerHTML = 
+                        '<div class="alert alert-danger">Error loading overall statistics. Please try again or start a new analysis.</div>';
+                    document.getElementById('overall-badge').textContent = 'Error';
+                    document.getElementById('overall-badge').className = 'badge bg-danger stats-badge ms-1';
+                });
+        }
+        
+        function pollOverallProgress(progressAnalysisId) {
+            const interval = setInterval(() => {
+                fetch(`/status/${progressAnalysisId}`)
+                    .then(response => response.json())
+                    .then(status => {
+                        console.log('Overall analysis status:', status);
+                        if (status.status === 'Complete') {
+                            clearInterval(interval);
+                            loadOverallResults(progressAnalysisId);
+                        } else if (status.status && status.status.startsWith('Error')) {
+                            clearInterval(interval);
+                            document.getElementById('overall-loading').innerHTML = 
+                                `<div class="alert alert-danger">${status.status}</div>`;
+                            document.getElementById('overall-badge').textContent = 'Error';
+                            document.getElementById('overall-badge').className = 'badge bg-danger stats-badge ms-1';
+                        } else {
+                            // Update progress
+                            const progress = status.progress || 0;
+                            document.getElementById('overall-badge').textContent = `${progress}%`;
+                            document.getElementById('overall-loading').innerHTML = `
+                                <div class="text-center loading-spinner">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">${status.status || 'Loading overall repository statistics...'}</p>
+                                    <div class="progress mt-2" style="width: 300px; margin: 0 auto;">
+                                        <div class="progress-bar" role="progressbar" style="width: ${progress}%" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100">${progress}%</div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        clearInterval(interval);
+                        console.error('Error polling progress:', error);
+                        document.getElementById('overall-loading').innerHTML = 
+                            '<div class="alert alert-danger">Error loading overall statistics. Please try again.</div>';
+                    });
+            }, 2000);
+        }
+        
+        function loadOverallResults(analysisId) {
+            // Hide loading spinner
+            document.getElementById('overall-loading').style.display = 'none';
+            
+            // Update badge
+            document.getElementById('overall-badge').textContent = 'Loaded';
+            document.getElementById('overall-badge').className = 'badge bg-success stats-badge ms-1';
+            
+            // Load images
+            document.getElementById('overall-user-chart').src = `/static/images/${analysisId}_user_chart.png`;
+            document.getElementById('overall-user-chart').style.display = 'block';
+            document.getElementById('overall-timeline-chart').src = `/static/images/${analysisId}_chart.png`;
+            document.getElementById('overall-timeline-chart').style.display = 'block';
+            
+            // Load user table
+            fetch(`/static/data/${analysisId}_user_stats.csv`)
+                .then(response => response.text())
+                .then(csvData => {
+                    const table = csvToTable(csvData);
+                    document.getElementById('overall-table-container').innerHTML = table;
+                });
+            
+            // Show content
+            document.getElementById('overall-content-loaded').style.display = 'block';
+            overallStatsLoaded = true;
+        }
+        
+        function csvToTable(csvData) {
+            const lines = csvData.trim().split('\\n');
+            const headers = lines[0].split(',');
+            
+            let table = '<div class="table-responsive"><table class="table table-striped table-hover user-table"><thead><tr>';
+            headers.forEach(header => {
+                table += `<th>${header.replace(/"/g, '')}</th>`;
+            });
+            table += '</tr></thead><tbody>';
+            
+            for (let i = 1; i < Math.min(lines.length, 21); i++) { // Limit to top 20 users
+                const cells = lines[i].split(',');
+                table += '<tr>';
+                cells.forEach((cell, index) => {
+                    const value = cell.replace(/"/g, '');
+                    if (headers[index].toLowerCase().includes('addition')) {
+                        table += `<td class="text-success">+${value}</td>`;
+                    } else if (headers[index].toLowerCase().includes('deletion')) {
+                        table += `<td class="text-danger">-${value}</td>`;
+                    } else {
+                        table += `<td>${value}</td>`;
+                    }
+                });
+                table += '</tr>';
+            }
+            
+            table += '</tbody></table></div>';
+            return table;
+        }
+    </script>
+</body>
+</html>

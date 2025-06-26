@@ -66,10 +66,10 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="repo_slug" class="form-label">Repository Slug <span class="text-danger">*</span></label>
+                                    <label for="repo_slug" class="form-label">Repository Slugs <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="repo_slug" name="repo_slug" required>
                                     <div class="info-text">
-                                        The repository name/slug (e.g., cx-switch-health-read-assist)
+                                        Comma-separated list of repository slugs (e.g., cx-switch-health-read-assist,ui-base,cx-switch-device-health)
                                     </div>
                                 </div>
                             </div>
@@ -90,13 +90,60 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="group_by" class="form-label">Group By</label>
-                            <select class="form-select" id="group_by" name="group_by">
-                                <option value="day">Day</option>
-                                <option value="week">Week</option>
-                                <option value="month">Month</option>
-                            </select>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="group_by" class="form-label">Group By</label>
+                                    <select class="form-select" id="group_by" name="group_by">
+                                        <option value="day">Day</option>
+                                        <option value="week">Week</option>
+                                        <option value="month">Month</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5>Analysis Type</h5>
+                            <div class="info-text mb-3">
+                                Choose the type of analysis based on your needs:
+                            </div>
+                            
+                            <div class="card-group">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">👤 User-Focused Analysis</h6>
+                                        <p class="card-text small">Analyze contributions for a specific user. Fast and focused.</p>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="analysis_type" id="user_analysis" value="user_focus" checked>
+                                            <label class="form-check-label" for="user_analysis">
+                                                <strong>User Analysis</strong>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">📊 Overall Repository Stats</h6>
+                                        <p class="card-text small">Complete statistics for ALL contributors in the repository. Takes longer but comprehensive.</p>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="analysis_type" id="overall_analysis" value="overall">
+                                            <label class="form-check-label" for="overall_analysis">
+                                                <strong>Overall Repository Stats</strong>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="user_field_container">
+                            <label for="focus_user" class="form-label">User Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="focus_user" name="focus_user" placeholder="e.g., manjunath.kallatti@hpe.com" required>
+                            <div class="info-text">
+                                Enter the email address of the user to analyze. This provides more accurate matching than usernames.
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -115,7 +162,9 @@
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Analyze Repository</button>
+                            <button type="submit" class="btn btn-primary" onclick="handleFormSubmit(event)">
+                                <span id="submit-text">Analyze Repository</span>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -124,5 +173,57 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            const form = event.target.closest('form');
+            const analysisType = document.querySelector('input[name="analysis_type"]:checked').value;
+            const focusUser = document.getElementById('focus_user').value.trim();
+            
+            // Validate user analysis requirements
+            if (analysisType === 'user' && !focusUser) {
+                alert('User-focused analysis requires a focus user to be specified.');
+                return;
+            }
+            
+            // Update form action based on analysis type
+            if (analysisType === 'user') {
+                form.action = '/analyze_user_only';
+                document.getElementById('submit-text').textContent = 'Analyzing User...';
+            } else {
+                form.action = '/analyze';
+                document.getElementById('submit-text').textContent = 'Analyzing Repository...';
+            }
+            
+            // Submit the form
+            form.submit();
+        }
+        
+        // Show/hide focus user field based on analysis type
+        document.addEventListener('DOMContentLoaded', function() {
+            const userRadio = document.getElementById('user_analysis');
+            const overallRadio = document.getElementById('overall_analysis');
+            const userFieldContainer = document.getElementById('user_field_container');
+            const focusUserInput = document.getElementById('focus_user');
+            
+            function toggleUserField() {
+                if (userRadio.checked) {
+                    userFieldContainer.style.display = 'block';
+                    focusUserInput.required = true;
+                } else {
+                    userFieldContainer.style.display = 'none';
+                    focusUserInput.required = false;
+                    focusUserInput.value = ''; // Clear the field when hidden
+                }
+            }
+            
+            userRadio.addEventListener('change', toggleUserField);
+            overallRadio.addEventListener('change', toggleUserField);
+            
+            // Initial call to set correct state
+            toggleUserField();
+        });
+    </script>
 </body>
 </html>
